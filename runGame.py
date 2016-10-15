@@ -7,7 +7,7 @@ import sys
 import os
 
 from tileRead import *
-from mouse_click import makeMoveOnScreen, flickMouse
+from mouse_click import makeMoveOnScreen, flickMouse, mouseClick
 from enginewrapper import Engine
 
 AllPieces = [ ['P','R','N','B','Q','K'],
@@ -24,16 +24,21 @@ requiredDirectories = ['screenshots', 'SquareImages']
 for DIR in requiredDirectories:
     if not os.path.isdir(DIR):
         os.mkdir(DIR)
+     
+referenceInitialBoard = chess.Board()
+BrowserAbsolutePosition = grabBrowserAbsolutePosition()
 
 MovingModeEnabled = False if '--nomove' in sys.argv else True
 def Game():
+    global PLAY
+    PLAY = 0
     PieceValueMap = setupTileReadingValues()
     Board = chess.Board()
     WaitingEngineMove = False
     print("initial setup done.")
     #chess.set_piece_at(56, chess.Piece.from_symbol('Q'))
     takeScreenshot()
-    BrowserAbsolutePosition = grabBrowserAbsolutePosition()
+    
     initial = ReadScreen(PieceValueMap)
     
     ComputerSide = 0 if initial[0] == 'r' else 1
@@ -54,19 +59,22 @@ def Game():
     game = True
     while game:
 
-
+        
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-    
+        
 
         if MOVES:
-
-            
-            
+           
             # moves saved as 'screen coordinates'
             print(MOVES)
             
-            if len(MOVES) > 3: # bail and don't process if screenshot proves to be invalid.
-                continue
+            if len(MOVES) > 2: # bail and don't process if screenshot proves to be invalid.
+                               #maybe website is waiting response for new game? check.
+                               #try to start new game, and reboot.
+                print("Bizarre board conformation!")
+                if tryNewGame(PieceValueMap, ComputerSide):
+                    PLAY = 1
+                    return
 
             castlingExclusion = {'h8f8': 'e8g8', 'a8c8': 'e8b8', 'a8d8': 'e8c8',
                                  'h1f1': 'e1g1', 'a1c1': 'e1b1', 'a1d1': 'e1c1'}
@@ -101,6 +109,9 @@ def Game():
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
+                        if tryNewGame(PieceValueMap, ComputerSide):
+                            PLAY = 1
+                            return
                         continue
         else:
             print("|||||")
@@ -142,6 +153,7 @@ def Game():
                             print("Repeating movement.")
                             flickMouse(BrowserAbsolutePosition)
                             makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
+                            sleep(0.2)
                     else:
                         print("Move sucesfully done.")
                         break
@@ -224,7 +236,21 @@ def detectScreenBoardMovement(Board, PieceValueMap, ComputerSide):
                     Difference[diffKeys[k]] = ['x','x']
                     Difference[diffKeys[v]] = ['x','x']
         return MOVES
+def tryNewGame(PieceValueMap, ComputerSide):
+    mouseClick(NewGameBox, BrowserAbsolutePosition)
 
+    HypoteticalNewComputerSide = ReadScreen(PieceValueMap)
+    MOVES_AgainstReferenceBoard = len(detectScreenBoardMovement(
+    referenceInitialBoard, PieceValueMap, HypoteticalNewComputerSide))
+
+    if HypoteticalNewComputerSide != ComputerSide or\
+       MOVES_AgainstReferenceBoard == 0 or\
+       MOVES_AgainstReferenceBoard == 1:
+       print("New match detected! Rebooting...")
+       return True
+    return False
     
 if __name__ == '__main__':
-    Game()
+    PLAY = 1
+    while PLAY:
+        Game()

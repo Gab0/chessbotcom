@@ -40,10 +40,8 @@ def randomCoordInsideBox(BOX):
     return COORD
 def makeMoveOnScreen(moveCoord, offset):
     
-    dummy= randomCoordInsideBox(BoardDelimitationBox)
+    mouseClick(BoardDelimitationBox, offset)
     sleep(random()/2)
-    pyautogui.click(x=dummy[0]+offset[0],y=dummy[1]+offset[1])
-    
     # duplicate moveCoord array so it can be reused in case of failing to move piece on screen.
     moveCoord = copy(moveCoord)
     for x in range(2):
@@ -64,4 +62,9 @@ def flickMouse(offset):
     for k in range(NUM):
         TARGET = randomCoordInsideBox(BoardDelimitationBox)
         pyautogui.moveTo(TARGET[0]+offset[0], TARGET[1]+offset[1], random() /2 )
+        
+def mouseClick(BOX, offset):
+    coord = randomCoordInsideBox(BOX)
+    pyautogui.click(x=coord[0]+offset[0],y=coord[1]+offset[1])
+    
 #generateSquareBox([1,1])
