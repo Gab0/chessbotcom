@@ -1,10 +1,9 @@
 #!/bin/python
 
 import pyautogui
-#from runGame import coordLabelToCoord
-#from tileRead import BoardDelimitationBox
-#BoardDelimitationBox = [111,193,915,987]
-BoardDelimitationBox = [111,186,916,990]
+
+from keyConstants import *
+
 from random import randrange, random
 from time import sleep
 from copy import copy

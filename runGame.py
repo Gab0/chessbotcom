@@ -19,6 +19,7 @@ Startup commands: --test  //load a dummy screenshot instead of processing realti
 --full  //run e-vchess engine in longer thinking mode, using xDEEP''')
     exit()
     
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 requiredDirectories = ['screenshots', 'SquareImages']
 for DIR in requiredDirectories:
     if not os.path.isdir(DIR):
