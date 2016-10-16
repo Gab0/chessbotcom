@@ -28,10 +28,10 @@ for DIR in requiredDirectories:
      
 referenceInitialBoard = chess.Board()
 BrowserAbsolutePosition = grabBrowserAbsolutePosition()
-BoardDelimitationBox = detectBoardBox()
-print(detectBoardBox())
+
+#print(BoardDelimitationBox)
       
-G = fullScreenToBoard(PathToReferenceScreenshot, BoardDelimitationBox)
+G = fullScreenToBoard(PathToReferenceScreenshot)
 GeneralBoardValue = EvaluateColoredBoard(G)
 MovingModeEnabled = False if '--nomove' in sys.argv else True
 def Game():
@@ -64,9 +64,9 @@ def Game():
     game = True
     while game:
 
-        newgame = fullScreenToBoard(PathToPresentBoardScreenshot, BoardDelimitationBox)
+        newgame = fullScreenToBoard(PathToPresentBoardScreenshot)
         newgame = EvaluateColoredBoard(newgame)
-        if abs(newgame-GeneralBoardValue) > 20:
+        if abs(newgame-GeneralBoardValue) > 23:
             if tryNewGame(PieceValueMap, ComputerSide):
                 PLAY = 1
                 return
@@ -118,9 +118,12 @@ def Game():
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
+                        if tryNewGame(PieceValueMap, ComputerSide):
+                            PLAY = 1
+                            return
                         continue
         else:
-            print("|||||")
+            print("||||||||")
 
         while WaitingEngineMove:
             sleep(1)
@@ -194,10 +197,10 @@ def screenCoordinateToVirtualBoard(I):
     return i * 8 + j
 
 def ReadScreen(PieceValueMap):
-    B = fullScreenToBoard(PathToPresentBoardScreenshot, BoardDelimiationBox)
+    B = fullScreenToBoard(PathToPresentBoardScreenshot)
     
     if '--test' in sys.argv:
-        B = fullScreenToBoard('screenshots/referencebe2e4.png', BoardDelimitationBox)
+        B = fullScreenToBoard('screenshots/referencebe2e4.png')
     B = ProcessImage(B)
     #B.show()
     MountedBoard = AnalyzeBoard(B, PieceValueMap)

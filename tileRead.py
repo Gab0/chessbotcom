@@ -8,6 +8,8 @@ import imagehash
 startingTime = time.time()
 from keyConstants import *
 
+
+
 def grabBrowserAbsolutePosition(browserName="mozilla"):
     C = ["xdotool", "search", "--name", browserName]
     ID = run(C, stdout=PIPE).stdout.decode("utf-8")
@@ -73,7 +75,7 @@ def createBlackPointPieceMap(iBPPM):
     
     
 
-def fullScreenToBoard(screenpath, BoardDelimitationBox):
+def fullScreenToBoard(screenpath):
 
     IMG = PIL.Image.open(screenpath)
     IMG = IMG.crop(BoardDelimitationBox)
@@ -89,7 +91,7 @@ def showMountedBoard(MountedBoardArray):
         print("")
     print("")
 def EvaluateSquare(IMG):
-    score = imagehash.phash(IMG)
+    score = imagehash.dhash(IMG)
     return score
 
 def EvaluateColoredBoard(IMG):
@@ -136,8 +138,8 @@ def SliceBoard(BOARD):
     Squares = []
     for i in range(8):
         for j in range(8):
-            J = j * yDotDistance
-            I = i * xDotDistance
+            J = j * xDotDistance
+            I = i * yDotDistance
             box = (J, I, J+xDotDistance, I+yDotDistance)
             p = BOARD.crop(box)
             Squares.append(p)
@@ -169,7 +171,7 @@ def AnalyzeBoard(BoardImage, PieceValueMap):
     return MountedBoard
                 
 def setupTileReadingValues(BoardDelimitationBox):
-    R = fullScreenToBoard(PathToReferenceScreenshot, BoardDelimitationBox)
+    R = fullScreenToBoard(PathToReferenceScreenshot)
 
     squarelist = GenerateSquareImages(R)
     iBPPM = MakeReferenceMap(squarelist)
@@ -197,6 +199,6 @@ def detectBoardBox():
 
     return [ first[0], first[1], last[0], last[1] ] 
 
-
+BoardDelimitationBox = detectBoardBox()
 
 #print('done. %i ' % (time.time() - startingTime))

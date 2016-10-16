@@ -3,7 +3,7 @@
 import pyautogui
 
 from keyConstants import *
-
+from tileRead import BoardDelimitationBox
 from random import randrange, random
 from time import sleep
 from copy import copy
@@ -26,7 +26,6 @@ def generateSquareBox(boardcoord):
     # print(BOX)
     return BOX
 
-
 def randomCoordInsideBox(BOX):
     # modified to ignore borders of the square!
     # this helps mantainging my heart beating rate stable xD;
@@ -38,6 +37,7 @@ def randomCoordInsideBox(BOX):
     COORD = [ randrange(BOX[X]+ (boxSIZE[X]//3), BOX[X+2] - (boxSIZE[X]//3) ) for X in range(2) ]
               
     return COORD
+
 def makeMoveOnScreen(moveCoord, offset):
     
     mouseClick(BoardDelimitationBox, offset)
@@ -54,8 +54,6 @@ def makeMoveOnScreen(moveCoord, offset):
     DragTime = random() * 2
     pyautogui.moveTo(moveCoord[0][0], moveCoord[0][1])
     pyautogui.dragTo(moveCoord[1][0], moveCoord[1][1], DragTime, button='left')
-
-              
     
 def flickMouse(offset):
     NUM = randrange(3)
@@ -67,4 +65,3 @@ def mouseClick(BOX, offset):
     coord = randomCoordInsideBox(BOX)
     pyautogui.click(x=coord[0]+offset[0],y=coord[1]+offset[1])
     
-#generateSquareBox([1,1])
