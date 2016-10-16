@@ -6,8 +6,8 @@ NewGameBox = [ 521 ,451 ,721 ,467 ]
 BlackThreshold = 10
 
 
-EnginePath = "/home/gabs/Desktop/e-vchess/engine/e-vchess"
-MachineDirectory = "/home/gabs/Desktop/e-vchess/machines/top_machines"
+EnginePath = ["e-vchess", "-l", '-t']    
+
 
 
 WhiteSquareColor = (240,217,181)

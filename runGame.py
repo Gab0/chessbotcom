@@ -50,8 +50,8 @@ def Game():
 
 
     print("Computer playing as %i" % ComputerSide)
-    engineRunCommand = [EnginePath,
-                        "-MD", MachineDirectory]
+    engineRunCommand = EnginePath
+
     if '--full' in sys.argv:
         engineRunCommand += ['--xdeep', '1']
     RunningEngine = Engine(engineRunCommand)
