@@ -266,7 +266,8 @@ def detectScreenBoardMovement(Board, PieceValueMap, ComputerSide):
 def tryNewGame(PieceValueMap, ComputerSide):
     mouseClick(NewGameBox, BrowserAbsolutePosition)
     sleep(6)
-    HypoteticalNewComputerSide = ReadScreen(PieceValueMap)
+    HypoteticalBoard= ReadScreen(PieceValueMap)
+    HypoteticalNewComputerSide = 0 if HypoteticalBoard[0] == 'r' else 1
     MOVES_AgainstReferenceBoard = len(detectScreenBoardMovement(
     referenceInitialBoard, PieceValueMap, HypoteticalNewComputerSide))
 

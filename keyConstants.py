@@ -6,7 +6,7 @@ NewGameBox = [ 521 ,451 ,721 ,467 ]
 BlackThreshold = 250
 
 
-EnginePath = ["e-vchess", "-l", '-t']    
+EnginePath = ["../e-vchess/engine/e-vchess", "-l", '-t', '-MD', '../e-vchess/machines']    
 
 
 
