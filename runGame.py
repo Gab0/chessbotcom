@@ -15,11 +15,16 @@ AllPieces = [ ['P','R','N','B','Q','K'],
               ['p','r','n','b','q','k'] ]
 
 if '--help' in sys.argv:
-    print('''\n autoChessbotcom.\n 
-Startup commands: --test  //load a dummy screenshot instead of processing realtime screen.\n 
-    --full  //run e-vchess engine in longer thinking mode, using xDEEP''')
+    print(
+'''
+chessbotcom v0.2;
+ startup args: --test //load a dummy screenshot instead of processing realtime screen.\n                   --full //run e-vchess engine in longer thinking mode, using xDEEP
+               --help //this
+               --watch //save square images from each evaluation of the board.   
+               --nomove //skip mouse movements.
+''')
     exit()
-    
+print(sys.argv[0])
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 requiredDirectories = ['screenshots', 'SquareImages']
 for DIR in requiredDirectories:
@@ -28,12 +33,16 @@ for DIR in requiredDirectories:
      
 referenceInitialBoard = chess.Board()
 BrowserAbsolutePosition = grabBrowserAbsolutePosition()
-
-#print(BoardDelimitationBox)
+print("path %s" % os.path.realpath(__file__))
+print("Board Position on Screen: %s" % BoardDelimitationBox)
       
 G = fullScreenToBoard(PathToReferenceScreenshot)
 GeneralBoardValue = EvaluateColoredBoard(G)
+
 MovingModeEnabled = False if '--nomove' in sys.argv else True
+KeepSquareImages = True if '--watch' in sys.argv else False
+TestMode = True if '--test' in sys.argv else False
+
 def Game():
     global PLAY
     PLAY = 0
@@ -42,7 +51,8 @@ def Game():
     WaitingEngineMove = False
     print("initial setup done.")
     #chess.set_piece_at(56, chess.Piece.from_symbol('Q'))
-    takeScreenshot()
+    if not TestMode:
+        takeScreenshot()
     
     initial = ReadScreen(PieceValueMap)
     
@@ -63,13 +73,13 @@ def Game():
         WaitingEngineMove = True
     game = True
     while game:
-
-        newgame = fullScreenToBoard(PathToPresentBoardScreenshot)
-        newgame = EvaluateColoredBoard(newgame)
-        if abs(newgame-GeneralBoardValue) > 23:
-            if tryNewGame(PieceValueMap, ComputerSide):
-                PLAY = 1
-                return
+        if not TestMode:
+            newgame = fullScreenToBoard(PathToPresentBoardScreenshot)
+            newgame = EvaluateColoredBoard(newgame)
+            if abs(newgame-GeneralBoardValue) > 23:
+                if tryNewGame(PieceValueMap, ComputerSide):
+                    PLAY = 1
+                    return
         
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
         
@@ -197,13 +207,13 @@ def screenCoordinateToVirtualBoard(I):
     return i * 8 + j
 
 def ReadScreen(PieceValueMap):
-    B = fullScreenToBoard(PathToPresentBoardScreenshot)
-    
-    if '--test' in sys.argv:
+    if TestMode:
         B = fullScreenToBoard('screenshots/referencebe2e4.png')
-    B = ProcessImage(B)
+    else:
+        B = fullScreenToBoard(PathToPresentBoardScreenshot)
+    #B = ProcessImage(B)
     #B.show()
-    MountedBoard = AnalyzeBoard(B, PieceValueMap)
+    MountedBoard = AnalyzeBoard(B, PieceValueMap, KeepSquareImages)
 
     showMountedBoard(MountedBoard)
     return MountedBoard

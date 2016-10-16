@@ -2,6 +2,7 @@
 
 from subprocess import run, PIPE
 import PIL.Image
+import PIL.ImageChops
 import time
 import imagehash
 
@@ -45,57 +46,67 @@ def takeScreenshot():
 
 def createBlackPointPieceMap(iBPPM):
     PieceValueMap = {
-                     iBPPM[0]: 'r',
-                     iBPPM[1]: 'n',
-                     iBPPM[2]: 'b',
-                     iBPPM[3]: 'q',
-                     iBPPM[4]: 'k',
-                     iBPPM[5]: 'b',
-                     iBPPM[6]: 'n',
-                     iBPPM[7]: 'r',
-                     iBPPM[8]: 'p',
-                     iBPPM[9]: 'p',
-                     #
-                     iBPPM[32]: 'x',
-                     iBPPM[33]: 'x',
-                     #
-                     iBPPM[48]: 'P',
-                     iBPPM[49]: 'P',
-                     iBPPM[56]: 'R',
-                     iBPPM[57]: 'N',
-                     iBPPM[58]: 'B',
-                     iBPPM[59]: 'Q',
-                     iBPPM[60]: 'K',
-                     iBPPM[61]: 'B',
-                     iBPPM[62]: 'N',
-                     iBPPM[63]: 'R'
+        iBPPM[0]: 'r',
+        iBPPM[1]: 'n',
+        iBPPM[2]: 'b',
+        iBPPM[3]: 'q',
+        iBPPM[4]: 'k',
+        iBPPM[5]: 'b',
+        iBPPM[6]: 'n',
+        iBPPM[7]: 'r',
+        iBPPM[8]: 'p',
+        iBPPM[9]: 'p',
+        iBPPM[10]: 'p',
+        iBPPM[11]: 'p',
+        iBPPM[12]: 'p',
+        iBPPM[13]: 'p',
+        iBPPM[14]: 'p',
+        iBPPM[15]: 'p',
+        #
+        iBPPM[32]: 'x',
+        iBPPM[33]: 'x',
+        #
+        iBPPM[48]: 'P',
+        iBPPM[49]: 'P',
+        iBPPM[50]: 'P',
+        iBPPM[51]: 'P',
+        iBPPM[52]: 'P',
+        iBPPM[53]: 'P',
+        iBPPM[54]: 'P',
+        iBPPM[55]: 'P',
+        iBPPM[56]: 'R',
+        iBPPM[57]: 'N',
+        iBPPM[58]: 'B',
+        iBPPM[59]: 'Q',
+        iBPPM[60]: 'K',
+        iBPPM[61]: 'B',
+        iBPPM[62]: 'N',
+        iBPPM[63]: 'R'
                      }
-    #print(PieceValueMap)
+    
     return PieceValueMap
     
     
 
 def fullScreenToBoard(screenpath):
-
     IMG = PIL.Image.open(screenpath)
     IMG = IMG.crop(BoardDelimitationBox)
-
     return IMG
 
 def showMountedBoard(MountedBoardArray):
-    j=0
     print("")
     for i in range(8):
         for j in range(8):
             print(MountedBoardArray[i*8+j], end=" ")
         print("")
     print("")
+    
 def EvaluateSquare(IMG):
     score = imagehash.dhash(IMG)
     return score
 
 def EvaluateColoredBoard(IMG):
-    score = imagehash.dhash(IMG)
+    score = imagehash.phash(IMG)
     return score
 
 def GameStillRunning(IMG):
@@ -109,13 +120,11 @@ def ProcessImage(IMG):
         for j in range(IMG.size[1]):
             if sum(pixels[i,j]) > BlackThreshold:
                 pixels[i,j] = WHITE 
-            else:
-                if i+3 > IMG.size[0] or i-3 < 0:
-                    pixels[i,j] = WHITE
-                if j+3 > IMG.size[1] or j-3 < 0:
-                    pixels[i,j] = WHITE
-
-    return IMG
+    bg = PIL.Image.new(IMG.mode, IMG.size, WHITE)
+    diff = PIL.ImageChops.difference(IMG,bg)
+    bbox = diff.getbbox()
+    
+    return IMG.crop(bbox)
 
 def GenerateSquareImages(BoardImage):
     BoardSquares = SliceBoard(BoardImage)
@@ -124,23 +133,25 @@ def GenerateSquareImages(BoardImage):
     for S in BoardSquares:
 
         BoardSquares[IDX] = ProcessImage(S)
-        BoardSquares[IDX].save("SquareImages/%i.png" % IDX)
+        BoardSquares[IDX].save("ReferenceSquareImages/%i.png" % IDX)
         IDX+=1
     return BoardSquares
 
 
 def SliceBoard(BOARD):
     bWidth, bHeight = BOARD.size
+    if bWidth % 2: bWidth -=1
+    if bHeight % 2: bHeight -=1
 
     xDotDistance = bWidth/8
     yDotDistance = bHeight/8
 
     Squares = []
-    for i in range(8):
-        for j in range(8):
-            J = j * xDotDistance
-            I = i * yDotDistance
-            box = (J, I, J+xDotDistance, I+yDotDistance)
+    for y in range(8):
+        for x in range(8):
+            X = x * xDotDistance
+            Y = y * yDotDistance
+            box = (X, Y, X + xDotDistance, Y + yDotDistance)
             p = BOARD.crop(box)
             Squares.append(p)
 
@@ -155,7 +166,7 @@ def MakeReferenceMap(BoardSquares):
 
     return iBPPM
 
-def AnalyzeBoard(BoardImage, PieceValueMap):
+def AnalyzeBoard(BoardImage, PieceValueMap, KeepSquareImages=False):
     
     BoardSquares = SliceBoard(BoardImage)
 
@@ -163,9 +174,11 @@ def AnalyzeBoard(BoardImage, PieceValueMap):
     MapKeys = PieceValueMap.keys()
     for S in range(len(BoardSquares)):
         BoardSquares[S] = ProcessImage(BoardSquares[S])
+        if KeepSquareImages:
+            BoardSquares[S].save("SquareImages/%i.png" % S)
         Value = EvaluateSquare(BoardSquares[S])
         #print(Value)
-        k = min(MapKeys, key=lambda x:abs(x-Value))
+        k = min(MapKeys, key=lambda x:abs((x - Value)/len(x.hash)**2))
         MountedBoard[S] = PieceValueMap[k]
 
     return MountedBoard

@@ -3,7 +3,7 @@
 #BoardDelimitationBox = [ 111, 186, 916 ,990 ]
 NewGameBox = [ 521 ,451 ,721 ,467 ]
 
-BlackThreshold = 10
+BlackThreshold = 250
 
 
 EnginePath = ["e-vchess", "-l", '-t']    
