@@ -2,8 +2,6 @@
 
 from subprocess import run, PIPE
 import PIL.Image
-# import numpy as np
-# import os
 import time
 import imagehash
 
@@ -37,10 +35,10 @@ def grabBrowserAbsolutePosition(browserName="mozilla"):
     return COORD
 
 
-def takeScreenshot(OutputFile="screenshots/current_board.png"):
+def takeScreenshot():
     callshutter = ['shutter', '--window=.*firefox.*',
                    '-e', '-n', '--disable_systray',
-                   '-o', OutputFile]
+                   '-o', PathToPresentBoardScreenshot ]
     run(callshutter, stdout=PIPE,stderr=PIPE)
 
 def createBlackPointPieceMap(iBPPM):
@@ -75,9 +73,7 @@ def createBlackPointPieceMap(iBPPM):
     
     
 
-def fullScreenToBoard(screenpath):
-    #BoardDelimitationBox = [109,193,889,973]
-    
+def fullScreenToBoard(screenpath, BoardDelimitationBox):
 
     IMG = PIL.Image.open(screenpath)
     IMG = IMG.crop(BoardDelimitationBox)
@@ -94,8 +90,15 @@ def showMountedBoard(MountedBoardArray):
     print("")
 def EvaluateSquare(IMG):
     score = imagehash.phash(IMG)
-    #score = CountBlackPixels(IMG)
     return score
+
+def EvaluateColoredBoard(IMG):
+    score = imagehash.dhash(IMG)
+    return score
+
+def GameStillRunning(IMG):
+    pass
+    
 
 def ProcessImage(IMG):
     WHITE = (255,255,255,255)
@@ -110,16 +113,14 @@ def ProcessImage(IMG):
                 if j+3 > IMG.size[1] or j-3 < 0:
                     pixels[i,j] = WHITE
 
-    #IMG = IMG.convert('1') 
     return IMG
 
 def GenerateSquareImages(BoardImage):
-    #BoardImage = ProcessImage(BoardImage)
     BoardSquares = SliceBoard(BoardImage)
     
     IDX=0
     for S in BoardSquares:
-        #print(np.array(S).shape)
+
         BoardSquares[IDX] = ProcessImage(S)
         BoardSquares[IDX].save("SquareImages/%i.png" % IDX)
         IDX+=1
@@ -154,7 +155,6 @@ def MakeReferenceMap(BoardSquares):
 
 def AnalyzeBoard(BoardImage, PieceValueMap):
     
-    #BoardImage = ProcessImage(BoardImage)
     BoardSquares = SliceBoard(BoardImage)
 
     MountedBoard = [ 'x' for i in range(64) ]
@@ -168,38 +168,34 @@ def AnalyzeBoard(BoardImage, PieceValueMap):
 
     return MountedBoard
                 
-        
-        
-def CountBlackPixels(ContenderSquare, originalI):
-    #Contender = np.array(ContenderSquare).reshape(97*97)
-    MAP = ContenderSquare.load()
-    blackpixelcount=0
-    for i in range(ContenderSquare.size[0]):
-        for j in range(ContenderSquare.size[1]):
-            if not MAP[i,j]:
-                blackpixelcount += 1
+def setupTileReadingValues(BoardDelimitationBox):
+    R = fullScreenToBoard(PathToReferenceScreenshot, BoardDelimitationBox)
 
-    
-    #print("BPC %i: %i" % (originalI,blackpixelcount))
-    return blackpixelcount                   
-        
-
-
-def setupTileReadingValues():
-    R = fullScreenToBoard('screenshots/reference.png')
-    #R = ProcessImage(R)
-    #R.show()
     squarelist = GenerateSquareImages(R)
     iBPPM = MakeReferenceMap(squarelist)
     PieceValueMap = createBlackPointPieceMap(iBPPM)
 
     return PieceValueMap
-    #print('Predicted initial board:')
-    #showMountedBoard(AnalyzeBoard(R))
+
+def detectBoardBox():
+    IMG = PIL.Image.open(PathToReferenceScreenshot)
+    pixels = IMG.load()
+    first = [0,0]
+    last = [0,0]
+    for i in range(IMG.size[0]):
+        for j in range(IMG.size[1]):
+
+            if pixels[i,j] == WhiteSquareColor:
+                if not first[0]:
+                    first[0] = i
+                if not first[1]:
+                    first[1] = j
+
+                last[0] = max(last[0], i)
+                last[1] = max(last[1], j)
 
 
-
-
+    return [ first[0], first[1], last[0], last[1] ] 
 
 
 

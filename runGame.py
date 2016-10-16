@@ -9,14 +9,15 @@ import os
 from tileRead import *
 from mouse_click import makeMoveOnScreen, flickMouse, mouseClick
 from enginewrapper import Engine
+from keyConstants import *
 
 AllPieces = [ ['P','R','N','B','Q','K'],
               ['p','r','n','b','q','k'] ]
 
 if '--help' in sys.argv:
-    print(''''\n autoChessbotcom.\n 
+    print('''\n autoChessbotcom.\n 
 Startup commands: --test  //load a dummy screenshot instead of processing realtime screen.\n 
---full  //run e-vchess engine in longer thinking mode, using xDEEP''')
+    --full  //run e-vchess engine in longer thinking mode, using xDEEP''')
     exit()
     
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -27,12 +28,16 @@ for DIR in requiredDirectories:
      
 referenceInitialBoard = chess.Board()
 BrowserAbsolutePosition = grabBrowserAbsolutePosition()
-
+BoardDelimitationBox = detectBoardBox()
+print(detectBoardBox())
+      
+G = fullScreenToBoard(PathToReferenceScreenshot, BoardDelimitationBox)
+GeneralBoardValue = EvaluateColoredBoard(G)
 MovingModeEnabled = False if '--nomove' in sys.argv else True
 def Game():
     global PLAY
     PLAY = 0
-    PieceValueMap = setupTileReadingValues()
+    PieceValueMap = setupTileReadingValues(BoardDelimitationBox)
     Board = chess.Board()
     WaitingEngineMove = False
     print("initial setup done.")
@@ -45,8 +50,8 @@ def Game():
 
 
     print("Computer playing as %i" % ComputerSide)
-    engineRunCommand = ["/home/gabs/Desktop/e-vchess/engine/e-vchess",
-                        "-MD", "/home/gabs/Desktop/e-vchess/machines/top_machines"]
+    engineRunCommand = [EnginePath,
+                        "-MD", MachineDirectory]
     if '--full' in sys.argv:
         engineRunCommand += ['--xdeep', '1']
     RunningEngine = Engine(engineRunCommand)
@@ -59,10 +64,16 @@ def Game():
     game = True
     while game:
 
+        newgame = fullScreenToBoard(PathToPresentBoardScreenshot, BoardDelimitationBox)
+        newgame = EvaluateColoredBoard(newgame)
+        if abs(newgame-GeneralBoardValue) > 20:
+            if tryNewGame(PieceValueMap, ComputerSide):
+                PLAY = 1
+                return
         
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
         
-
+        
         if MOVES:
            
             # moves saved as 'screen coordinates'
@@ -72,9 +83,7 @@ def Game():
                                #maybe website is waiting response for new game? check.
                                #try to start new game, and reboot.
                 print("Bizarre board conformation!")
-                if tryNewGame(PieceValueMap, ComputerSide):
-                    PLAY = 1
-                    return
+
 
             castlingExclusion = {'h8f8': 'e8g8', 'a8c8': 'e8b8', 'a8d8': 'e8c8',
                                  'h1f1': 'e1g1', 'a1c1': 'e1b1', 'a1d1': 'e1c1'}
@@ -109,9 +118,6 @@ def Game():
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
-                        if tryNewGame(PieceValueMap, ComputerSide):
-                            PLAY = 1
-                            return
                         continue
         else:
             print("|||||")
@@ -147,13 +153,20 @@ def Game():
                 
                 
                 while True:
-                    TestingScreenMovementSuccess = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-                    if TestingScreenMovementSuccess:
-                        if TestingScreenMovementSuccess[0][0] in AllPieces[ComputerSide]:
-                            print("Repeating movement.")
-                            flickMouse(BrowserAbsolutePosition)
-                            makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-                            sleep(0.2)
+                    TestingScreenMovelist = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
+                    if not TestingScreenMovelist:
+                        break
+                    MovingPiecePool = [ x[0] for x in TestingScreenMovelist ]
+                    ERROR = 0
+                    for p in MovingPiecePool:
+                        if p in AllPieces[ComputerSide]:
+                            ERROR = 1
+
+                    if ERROR:
+                        print("Repeating movement.")
+                        flickMouse(BrowserAbsolutePosition)
+                        makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
+                        sleep(0.2)
                     else:
                         print("Move sucesfully done.")
                         break
@@ -181,9 +194,10 @@ def screenCoordinateToVirtualBoard(I):
     return i * 8 + j
 
 def ReadScreen(PieceValueMap):
-    B = fullScreenToBoard('screenshots/current_board.png')
+    B = fullScreenToBoard(PathToPresentBoardScreenshot, BoardDelimiationBox)
+    
     if '--test' in sys.argv:
-        B = fullScreenToBoard('screenshots/referencebe2e4.png')
+        B = fullScreenToBoard('screenshots/referencebe2e4.png', BoardDelimitationBox)
     B = ProcessImage(B)
     #B.show()
     MountedBoard = AnalyzeBoard(B, PieceValueMap)
@@ -238,7 +252,7 @@ def detectScreenBoardMovement(Board, PieceValueMap, ComputerSide):
         return MOVES
 def tryNewGame(PieceValueMap, ComputerSide):
     mouseClick(NewGameBox, BrowserAbsolutePosition)
-
+    sleep(6)
     HypoteticalNewComputerSide = ReadScreen(PieceValueMap)
     MOVES_AgainstReferenceBoard = len(detectScreenBoardMovement(
     referenceInitialBoard, PieceValueMap, HypoteticalNewComputerSide))
@@ -251,6 +265,9 @@ def tryNewGame(PieceValueMap, ComputerSide):
     return False
     
 if __name__ == '__main__':
+
+
+    
     PLAY = 1
     while PLAY:
         Game()
