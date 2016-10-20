@@ -51,7 +51,7 @@ def makeMoveOnScreen(moveCoord, offset):
         moveCoord[x][0] += offset[0]
         moveCoord[x][1] += offset[1]
     
-    DragTime = random() * 2
+    DragTime = random()/2 + 0.5
     pyautogui.moveTo(moveCoord[0][0], moveCoord[0][1])
     pyautogui.dragTo(moveCoord[1][0], moveCoord[1][1], DragTime, button='left')
     

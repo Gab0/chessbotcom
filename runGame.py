@@ -1,11 +1,25 @@
 #!/bin/python
-
 import chess
-
 from time import sleep
-import sys
 import os
+import sys
 
+if '--help' in sys.argv:
+    print('''
+
+chessbotcom v0.2;
+
+        arguments:
+               --test //load a dummy screenshot instead of processing realtime screen.
+               --full //run e-vchess engine in longer thinking mode, using xDEEP.
+               --help //this
+               --watch //save square images from each evaluation of the board.
+               --nomove //skip mouse movements.
+               --autonew //automatically starts new games, endless play.
+
+''')
+    exit()
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
 from tileRead import *
 from mouse_click import makeMoveOnScreen, flickMouse, mouseClick
 from enginewrapper import Engine
@@ -14,18 +28,9 @@ from keyConstants import *
 AllPieces = [ ['P','R','N','B','Q','K'],
               ['p','r','n','b','q','k'] ]
 
-if '--help' in sys.argv:
-    print(
-'''
-chessbotcom v0.2;
- startup args: --test //load a dummy screenshot instead of processing realtime screen.\n                   --full //run e-vchess engine in longer thinking mode, using xDEEP
-               --help //this
-               --watch //save square images from each evaluation of the board.   
-               --nomove //skip mouse movements.
-''')
-    exit()
+
 print(sys.argv[0])
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
 requiredDirectories = ['screenshots', 'SquareImages']
 for DIR in requiredDirectories:
     if not os.path.isdir(DIR):
@@ -33,8 +38,8 @@ for DIR in requiredDirectories:
      
 referenceInitialBoard = chess.Board()
 BrowserAbsolutePosition = grabBrowserAbsolutePosition()
-print("path %s" % os.path.realpath(__file__))
-print("Board Position on Screen: %s" % BoardDelimitationBox)
+#print("path %s" % os.path.realpath(__file__))
+#print("Board Position on Screen: %s" % BoardDelimitationBox)
       
 G = fullScreenToBoard(PathToReferenceScreenshot)
 GeneralBoardValue = EvaluateColoredBoard(G)
@@ -42,6 +47,7 @@ GeneralBoardValue = EvaluateColoredBoard(G)
 MovingModeEnabled = False if '--nomove' in sys.argv else True
 KeepSquareImages = True if '--watch' in sys.argv else False
 TestMode = True if '--test' in sys.argv else False
+AutoNewGameMode = True if '--autonew' in sys.argv else False
 
 def Game():
     global PLAY
@@ -53,39 +59,49 @@ def Game():
     #chess.set_piece_at(56, chess.Piece.from_symbol('Q'))
     if not TestMode:
         takeScreenshot()
-    
+    if '--full' in sys.argv:
+        engineRunCommand += ['--xdeep', '1']
+    engineRunCommand = EnginePath
+    RunningEngine = Engine(engineRunCommand)
+    sleep(1)
+  
     initial = ReadScreen(PieceValueMap)
     
     ComputerSide = 0 if initial[0] == 'r' else 1
 
 
     print("Computer playing as %i" % ComputerSide)
-    engineRunCommand = EnginePath
 
-    if '--full' in sys.argv:
-        engineRunCommand += ['--xdeep', '1']
-    RunningEngine = Engine(engineRunCommand)
-    sleep(1)
+
+
     RunningEngine.send('new')
     if not ComputerSide:
         RunningEngine.send('white')
         RunningEngine.send('go')
         WaitingEngineMove = True
     game = True
-    while game:
+    while game: 
+        PreliminaryBoard = fullScreenToBoard(PathToPresentBoardScreenshot)
+        PreliminaryBoardValue = EvaluateColoredBoard(PreliminaryBoard)
+        
         if not TestMode:
-            newgame = fullScreenToBoard(PathToPresentBoardScreenshot)
-            newgame = EvaluateColoredBoard(newgame)
-            if abs(newgame-GeneralBoardValue) > 23:
-                if tryNewGame(PieceValueMap, ComputerSide):
-                    PLAY = 1
-                    return
-        
+            BoardValidity = abs(PreliminaryBoardValue-GeneralBoardValue)
+            print("Board validity = %i    fail @38" % BoardValidity)
+            if BoardValidity > 38:
+                print("Invalid board!", end=" ")
+                if AutoNewGameMode:
+                    print("Testing for new game.", end= " ")
+                    if tryNewGame(Board,PieceValueMap, ComputerSide):
+                        print("New game detected! Rebooting...")
+                        PLAY = 1
+                        return
+                    else:
+                        print("No new game.")
+
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-        
-        
+   
         if MOVES:
-           
+            print("&" * 12)
             # moves saved as 'screen coordinates'
             print(MOVES)
             
@@ -128,12 +144,12 @@ def Game():
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
-                        if tryNewGame(PieceValueMap, ComputerSide):
+                        if tryNewGame(Board, PieceValueMap, ComputerSide):
                             PLAY = 1
                             return
                         continue
         else:
-            print("||||||||")
+            print("|" * 12)
 
         while WaitingEngineMove:
             sleep(1)
@@ -183,8 +199,11 @@ def Game():
                     else:
                         print("Move sucesfully done.")
                         break
-
-        sleep(1)
+        try:
+            sleep(1)
+        except KeyboardInterrupt:
+            print("Session Ends.")
+            exit()
         
 def virtualAbsoluteCoordinateToXY(coord):
     if type(coord) == list:
@@ -263,19 +282,29 @@ def detectScreenBoardMovement(Board, PieceValueMap, ComputerSide):
                     Difference[diffKeys[k]] = ['x','x']
                     Difference[diffKeys[v]] = ['x','x']
         return MOVES
-def tryNewGame(PieceValueMap, ComputerSide):
+    
+def tryNewGame(Board, PieceValueMap, ComputerSide):
+    if not AutoNewGameMode:
+        return False
     mouseClick(NewGameBox, BrowserAbsolutePosition)
     sleep(6)
     HypoteticalBoard= ReadScreen(PieceValueMap)
+    print(":" * 12)
     HypoteticalNewComputerSide = 0 if HypoteticalBoard[0] == 'r' else 1
-    MOVES_AgainstReferenceBoard = len(detectScreenBoardMovement(
-    referenceInitialBoard, PieceValueMap, HypoteticalNewComputerSide))
-
+    
+    MOVES_AgainstReferenceBoard = detectScreenBoardMovement(
+    referenceInitialBoard, PieceValueMap, HypoteticalNewComputerSide)
+    MOVES_AgainstReferenceBoard = len(MOVES_AgainstReferenceBoard) if MOVES_AgainstReferenceBoard else 0
+    
+    MOVES_AgainstSelfBoard = detectScreenBoardMovement(
+        Board, PieceValueMap, HypoteticalNewComputerSide)
+    MOVES_AgainstSelfBoard = len(MOVES_AgainstSelfBoard) if MOVES_AgainstSelfBoard else 0
+    
     if HypoteticalNewComputerSide != ComputerSide or\
        MOVES_AgainstReferenceBoard == 0 or\
        MOVES_AgainstReferenceBoard == 1:
-       print("New match detected! Rebooting...")
-       return True
+       if MOVES_AgainstSelfBoard not in [0,1]:    
+           return True
     return False
     
 if __name__ == '__main__':

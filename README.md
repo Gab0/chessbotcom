@@ -9,4 +9,4 @@ Don't just load stockfish on it, this is dumb. It's meant to test experimental c
        * Start the game, then run the script.<br><br>
        
 Requires: [python modules] imagehash, python-chess, pyautogui<br>
-	  [executables] shutter
+	  [executables] shutter, xdotool
