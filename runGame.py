@@ -1,6 +1,6 @@
 #!/bin/python
 import chess
-from time import sleep
+from time import sleep, time as Time
 import os
 import sys
 
@@ -16,6 +16,7 @@ chessbotcom v0.2;
                --watch //save square images from each evaluation of the board.
                --nomove //skip mouse movements.
                --autonew //automatically starts new games, endless play.
+               --secondary //load secondary reference screenshot. (virtual machine helper)
 
 ''')
     exit()
@@ -25,11 +26,19 @@ from mouse_click import makeMoveOnScreen, flickMouse, mouseClick
 from enginewrapper import Engine
 from keyConstants import *
 
+
+if '--full' in sys.argv:
+    engineRunCommand += ['--xdeep', '1']
+MovingModeEnabled = False if '--nomove' in sys.argv else True
+KeepSquareImages = True if '--watch' in sys.argv else False
+TestMode = True if '--test' in sys.argv else False
+AutoNewGameMode = True if '--autonew' in sys.argv else False
+
+
 AllPieces = [ ['P','R','N','B','Q','K'],
               ['p','r','n','b','q','k'] ]
 
-
-print(sys.argv[0])
+Colors = { 0:'White', 1: 'Black' }
 
 requiredDirectories = ['screenshots', 'SquareImages']
 for DIR in requiredDirectories:
@@ -39,30 +48,31 @@ for DIR in requiredDirectories:
 referenceInitialBoard = chess.Board()
 BrowserAbsolutePosition = grabBrowserAbsolutePosition()
 #print("path %s" % os.path.realpath(__file__))
-#print("Board Position on Screen: %s" % BoardDelimitationBox)
+print("Board Position on Screen: %s" % BoardDelimitationBox)
       
 G = fullScreenToBoard(PathToReferenceScreenshot)
 GeneralBoardValue = EvaluateColoredBoard(G)
 
-MovingModeEnabled = False if '--nomove' in sys.argv else True
-KeepSquareImages = True if '--watch' in sys.argv else False
-TestMode = True if '--test' in sys.argv else False
-AutoNewGameMode = True if '--autonew' in sys.argv else False
 
+
+print('\n--chessbotcom--\n')
+print("reference screenshot is: %s." % PathToReferenceScreenshot)
 def Game():
     global PLAY
     PLAY = 0
     PieceValueMap = setupTileReadingValues(BoardDelimitationBox)
     Board = chess.Board()
     WaitingEngineMove = False
-    print("initial setup done.")
-    #chess.set_piece_at(56, chess.Piece.from_symbol('Q'))
+    EngineThinkingStartTime = Time()
+    
+    print("board reader online.")
+    
     if not TestMode:
         takeScreenshot()
-    if '--full' in sys.argv:
-        engineRunCommand += ['--xdeep', '1']
-    engineRunCommand = EnginePath
-    RunningEngine = Engine(engineRunCommand)
+        
+
+    
+    RunningEngine = Engine(engineRunCommand, 'engineComm.log')
     sleep(1)
   
     initial = ReadScreen(PieceValueMap)
@@ -70,7 +80,7 @@ def Game():
     ComputerSide = 0 if initial[0] == 'r' else 1
 
 
-    print("Computer playing as %i" % ComputerSide)
+    print( "Computer playing as %s" % Colors[ComputerSide] )
 
 
 
@@ -89,21 +99,21 @@ def Game():
             print("Board validity = %i    fail @38" % BoardValidity)
             if BoardValidity > 38:
                 print("Invalid board!", end=" ")
-                if AutoNewGameMode:
-                    print("Testing for new game.", end= " ")
-                    if tryNewGame(Board,PieceValueMap, ComputerSide):
-                        print("New game detected! Rebooting...")
-                        PLAY = 1
-                        return
-                    else:
-                        print("No new game.")
+                continue
 
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-   
+        if AutoNewGameMode and CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
+            #mouseClick(NewGameBox, BrowserAbsolutePosition)
+            
+            print("\nScreen to new game detected!")
+            if tryNewGame(Board, PieceValueMap, ComputerSide):
+                PLAY=1
+                return
+            
         if MOVES:
             print("&" * 12)
             # moves saved as 'screen coordinates'
-            print(MOVES)
+            #print(MOVES)
             
             if len(MOVES) > 2: # bail and don't process if screenshot proves to be invalid.
                                #maybe website is waiting response for new game? check.
@@ -135,27 +145,30 @@ def Game():
                         if castlingExclusion[M[3]] in [ m[3] for m in MOVES]:
                             continue
                         
-                    print("Move detected: %s" % ('   '.join([str(x) for x in M])))
+                    print("Move detected: %s" % showmove(M))
 
                     if chess.Move.from_uci(M[3]) in list(Board.generate_legal_moves()):
                         Board.push(chess.Move.from_uci(M[3]))
                         RunningEngine.send(M[3])
                         WaitingEngineMove = True
+                        print("\nWaiting engine movement...\n")
+
+                        EngineThinkingStartTime = Time()
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
-                        if tryNewGame(Board, PieceValueMap, ComputerSide):
-                            PLAY = 1
-                            return
-                        continue
+
         else:
             print("|" * 12)
 
         while WaitingEngineMove:
-            sleep(1)
+            sleep(0.3)
+
+            print("\r... %.1fs" % (Time() - EngineThinkingStartTime), end=" ")
             enginemove = RunningEngine.readMove(Verbose=False)
             if enginemove:
-                print("Engine says %s !" % enginemove)
+                EngineThinkingTime = Time() - EngineThinkingStartTime
+                print("\rEngine says %s !  :%is" % (enginemove, EngineThinkingTime)   )
                 Board.push(chess.Move.from_uci(enginemove))
                 WaitingEngineMove = False
                 if not MovingModeEnabled:
@@ -176,9 +189,9 @@ def Game():
                 
 
                 ScreenSquarePair = [From, To]
-                print(ScreenSquarePair)
+                #print(ScreenSquarePair)
                 makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-                print("Clicking %s" % ScreenSquarePair)
+                #print("Clicking %s" % ScreenSquarePair)
                 
                 
                 while True:
@@ -234,7 +247,7 @@ def ReadScreen(PieceValueMap):
     #B.show()
     MountedBoard = AnalyzeBoard(B, PieceValueMap, KeepSquareImages)
 
-    showMountedBoard(MountedBoard)
+    print(showMountedBoard(MountedBoard))
     return MountedBoard
     
 def coordLabelToCoord(letternum):
@@ -306,6 +319,9 @@ def tryNewGame(Board, PieceValueMap, ComputerSide):
        if MOVES_AgainstSelfBoard not in [0,1]:    
            return True
     return False
+
+def showmove(movement):
+    return '   '.join([str(x) for x in movement])
     
 if __name__ == '__main__':
 

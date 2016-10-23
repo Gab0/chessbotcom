@@ -7,7 +7,7 @@ from os import O_NONBLOCK, read, system
 
 class Engine():
 
-    def __init__(self, Arguments):
+    def __init__(self, Arguments, recordCommunication=None):
         try:
             self.engine = Popen(Arguments, stdin=PIPE, stdout=PIPE)
         except FileNotFoundError:
@@ -17,9 +17,8 @@ class Engine():
         flags = fcntl(self.engine.stdout, F_GETFL)
         fcntl(self.engine.stdout, F_SETFL, flags | O_NONBLOCK)
 
-        self.recordComm = 0
-
-        self.recordedData=""
+        self.recordCommunication = open(recordCommunication, 'w')\
+                                   if recordCommunication else None
 
     def send(self, data):
         self.engine.stdin.write(bytearray("%s\n" % data, "utf-8"))
@@ -31,14 +30,14 @@ class Engine():
             self.engine.stdout.flush()
             data = self.engine.stdout.readlines()
             data = [x.decode('utf-8', 'ignore') for x in data]
-            if self.recordComm:
+            if self.recordCommunication:
                 for c in data:
-                    self.recordedData += c
+                    self.recordCommunication.write(c)
         else:
             self.engine.stdout.flush()
             data = self.engine.stdout.read().decode('utf-8', 'ignore')
-            if self.recordComm:
-                self.recordedData +=data
+            if self.recordCommunication:
+                self.recordCommunication.write(data)
 
         return data
 
@@ -60,11 +59,12 @@ class Engine():
 
     def dumpRecordedData(self):
         if self.recordedData:
-            File = open("log/%i.dump" % self.pid(),'w')
+            File = open("%i.dump" % self.pid(),'w')
             File.write(self.recordedData)
             File.close()
     def __del__(self):
         try:
+            self.dumpRecordedData()
             self.destroy()
         except:
             pass

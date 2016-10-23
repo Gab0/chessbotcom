@@ -39,10 +39,25 @@ def grabBrowserAbsolutePosition(browserName="mozilla"):
 
 
 def takeScreenshot():
-    callshutter = ['shutter', '--window=.*firefox.*',
+    '''callshutter = ['shutter', '--window=.*firefox.*',
                    '-e', '-n', '--disable_systray',
                    '-o', PathToPresentBoardScreenshot ]
-    run(callshutter, stdout=PIPE,stderr=PIPE)
+                   
+    run(callshutter, stdout=PIPE,stderr=PIPE)'''
+
+    command = ['wmctrl', '-l']
+    winList = run(command, stdout=PIPE, stderr=PIPE)
+    winList = winList.stdout.decode('utf-8').split('\n')
+    winID = None
+    #print(winList)
+    for line in winList:
+        if WindowNameKeyword in line:
+            winID = line.split(' ')[0]
+    if winID:
+        #print(winID)
+        command = [ 'import', '-border', '-frame', '-window',
+                   winID, PathToPresentBoardScreenshot ]
+        run(command, stdout=PIPE, stderr=PIPE)
 
 def createBlackPointPieceMap(iBPPM):
     PieceValueMap = {
@@ -94,12 +109,14 @@ def fullScreenToBoard(screenpath):
     return IMG
 
 def showMountedBoard(MountedBoardArray):
-    print("")
+    BOARD = "\n"
     for i in range(8):
         for j in range(8):
-            print(MountedBoardArray[i*8+j], end=" ")
-        print("")
-    print("")
+            BOARD += MountedBoardArray[i*8+j]
+        BOARD += "\n"
+    BOARD += "\n"
+
+    return BOARD
     
 def EvaluateSquare(IMG):
     score = imagehash.dhash(IMG)
@@ -109,6 +126,16 @@ def EvaluateColoredBoard(IMG):
     score = imagehash.phash(IMG)
     return score
 
+def CheckForNewGameImage(IMG):
+    NewGameCounter=0
+    pixels = IMG.load()
+    for k in range(IMG.width):
+        for j in range(IMG.height):
+            if pixels[k,j] == (230, 145, 44):
+                NewGameCounter += 1
+                if NewGameCounter > 60:
+                    return True
+    return False
 def GameStillRunning(IMG):
     pass
     
