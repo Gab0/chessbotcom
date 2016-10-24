@@ -19,7 +19,7 @@ class Engine():
 
         self.recordCommunication = open(recordCommunication, 'w')\
                                    if recordCommunication else None
-
+        self.MachineName = None
     def send(self, data):
         self.engine.stdin.write(bytearray("%s\n" % data, "utf-8"))
         self.engine.stdin.flush()
@@ -30,6 +30,9 @@ class Engine():
             self.engine.stdout.flush()
             data = self.engine.stdout.readlines()
             data = [x.decode('utf-8', 'ignore') for x in data]
+            for line in data:
+                if 'MACname' in line:
+                    self.MachineName = line[-1][:-1]
             if self.recordCommunication:
                 for c in data:
                     self.recordCommunication.write(c)
@@ -70,7 +73,7 @@ class Engine():
             pass
     def destroy(self):
         try:
-            call(['kill', '-9', str(self.engine.pid)])
+            call(['kill', '-9', str(self.engine.pid), '&'])
         except AttributeError:
             pass
 

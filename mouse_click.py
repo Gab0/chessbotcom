@@ -38,7 +38,7 @@ def randomCoordInsideBox(BOX):
               
     return COORD
 
-def makeMoveOnScreen(moveCoord, offset):
+def makeMoveOnScreen(moveCoord, offset, promote=False):
     
     mouseClick(BoardDelimitationBox, offset)
     sleep(random()/2)
@@ -54,6 +54,10 @@ def makeMoveOnScreen(moveCoord, offset):
     DragTime = random()/2 + 0.5
     pyautogui.moveTo(moveCoord[0][0], moveCoord[0][1])
     pyautogui.dragTo(moveCoord[1][0], moveCoord[1][1], DragTime, button='left')
+
+    if promote:
+        sleep(0.5)
+        pyautogui.click()
     
 def flickMouse(offset):
     NUM = randrange(3)

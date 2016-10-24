@@ -53,13 +53,12 @@ print("Board Position on Screen: %s" % BoardDelimitationBox)
 G = fullScreenToBoard(PathToReferenceScreenshot)
 GeneralBoardValue = EvaluateColoredBoard(G)
 
-
+RunningEngine = Engine(engineRunCommand, 'engineComm.log')
 
 print('\n--chessbotcom--\n')
 print("reference screenshot is: %s." % PathToReferenceScreenshot)
 def Game():
-    global PLAY
-    PLAY = 0
+
     PieceValueMap = setupTileReadingValues(BoardDelimitationBox)
     Board = chess.Board()
     WaitingEngineMove = False
@@ -71,9 +70,9 @@ def Game():
         takeScreenshot()
         
 
-    
-    RunningEngine = Engine(engineRunCommand, 'engineComm.log')
-    sleep(1)
+    while not validadeBoard():
+        sleep(1)
+        continue
   
     initial = ReadScreen(PieceValueMap)
     
@@ -83,7 +82,6 @@ def Game():
     print( "Computer playing as %s" % Colors[ComputerSide] )
 
 
-
     RunningEngine.send('new')
     if not ComputerSide:
         RunningEngine.send('white')
@@ -91,29 +89,22 @@ def Game():
         WaitingEngineMove = True
     game = True
     while game: 
-        PreliminaryBoard = fullScreenToBoard(PathToPresentBoardScreenshot)
-        PreliminaryBoardValue = EvaluateColoredBoard(PreliminaryBoard)
+        V = validadeBoard()
+        if not V:
+            continue
         
-        if not TestMode:
-            BoardValidity = abs(PreliminaryBoardValue-GeneralBoardValue)
-            print("Board validity = %i    fail @38" % BoardValidity)
-            if BoardValidity > 38:
-                print("Invalid board!", end=" ")
-                continue
-
         MOVES = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
         if AutoNewGameMode and CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
-            #mouseClick(NewGameBox, BrowserAbsolutePosition)
+            mouseClick(NewGameBox, BrowserAbsolutePosition)
             
             print("\nScreen to new game detected!")
-            if tryNewGame(Board, PieceValueMap, ComputerSide):
-                PLAY=1
-                return
+            #if tryNewGame(Board, PieceValueMap, ComputerSide):
+            return
             
         if MOVES:
-            print("&" * 12)
+            #print("&" * 12)
             # moves saved as 'screen coordinates'
-            #print(MOVES)
+            print(MOVES)
             
             if len(MOVES) > 2: # bail and don't process if screenshot proves to be invalid.
                                #maybe website is waiting response for new game? check.
@@ -123,20 +114,7 @@ def Game():
 
             castlingExclusion = {'h8f8': 'e8g8', 'a8c8': 'e8b8', 'a8d8': 'e8c8',
                                  'h1f1': 'e1g1', 'a1c1': 'e1b1', 'a1d1': 'e1c1'}
-            for M in range(len(MOVES)):
-                    
-                From = MOVES[M][1]
-                #From = screenCoordinateToVirtualBoard(M[0], ComputerSide)
-                From = virtualAbsoluteCoordinateToXY(From)
-                #print(From)
-                From = coordLabelToCoord(From)
-                
-                To = MOVES[M][2]
-                #To = screenCoordinateToVirtualBoard(To, ComputerSide)
-                To = virtualAbsoluteCoordinateToXY(To)
-                To = coordLabelToCoord(To)
-                
-                MOVES[M].append(From+To)
+ 
 
             for M in MOVES:
                 if M[0] in AllPieces[1-ComputerSide]:
@@ -208,7 +186,7 @@ def Game():
                         print("Repeating movement.")
                         flickMouse(BrowserAbsolutePosition)
                         makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-                        sleep(0.2)
+                        sleep(7)
                     else:
                         print("Move sucesfully done.")
                         break
@@ -284,23 +262,53 @@ def detectScreenBoardMovement(Board, PieceValueMap, ComputerSide):
     if Difference:
         MOVES = []
         diffKeys = list(Difference.keys())
+        pawns = [AllPieces[x][0] for x in range(2)]
         for k in range(len(diffKeys)):
             for v in range(len(diffKeys)):
+                promotion = False
                 A = Difference[diffKeys[k]][0]
                 B = Difference[diffKeys[v]][1]
+                
+                # the piece moves from A to B;
+                
+                # not what we are looking for;
                 if B == 'x':
                     continue
-                if A == B:
+                
+                # promotion processing;
+                if A in pawns: 
+                    pawnside = pawns.index(A)
+                    if B in AllPieces[pawnside] and B != A:
+                        promotion = True
+                        B = A+B
+                        
+                # move found;
+                if A == B or promotion:
                     MOVES.append([B, diffKeys[k], diffKeys[v]])
                     Difference[diffKeys[k]] = ['x','x']
                     Difference[diffKeys[v]] = ['x','x']
+                    
+                    # create UCI string;
+                    From = diffKeys[k]
+                    From = virtualAbsoluteCoordinateToXY(From)
+                    From = coordLabelToCoord(From)
+                
+                    To = diffKeys[v]
+                    To = virtualAbsoluteCoordinateToXY(To)
+                    To = coordLabelToCoord(To)
+                
+                    MOVES[-1].append(From+To)
+                    if promotion:
+                        MOVES[-1][3] += B
+
+                        
         return MOVES
     
 def tryNewGame(Board, PieceValueMap, ComputerSide):
     if not AutoNewGameMode:
         return False
     mouseClick(NewGameBox, BrowserAbsolutePosition)
-    sleep(6)
+    sleep(12)
     HypoteticalBoard= ReadScreen(PieceValueMap)
     print(":" * 12)
     HypoteticalNewComputerSide = 0 if HypoteticalBoard[0] == 'r' else 1
@@ -319,14 +327,24 @@ def tryNewGame(Board, PieceValueMap, ComputerSide):
        if MOVES_AgainstSelfBoard not in [0,1]:    
            return True
     return False
+def validadeBoard():
+    PreliminaryBoard = fullScreenToBoard(PathToPresentBoardScreenshot)
+    PreliminaryBoardValue = EvaluateColoredBoard(PreliminaryBoard)
+
+
+    BoardValidity = abs(PreliminaryBoardValue-GeneralBoardValue)
+    print("Board validity = %i    fail @38" % BoardValidity)
+    if BoardValidity > 38:
+        print("Invalid board!", end=" ")
+        return False
+    return True
 
 def showmove(movement):
     return '   '.join([str(x) for x in movement])
     
 if __name__ == '__main__':
-
-
-    
-    PLAY = 1
+   
+    PLAY = 10
     while PLAY:
         Game()
+        PLAY -=1

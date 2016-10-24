@@ -9,8 +9,6 @@ import imagehash
 startingTime = time.time()
 from keyConstants import *
 
-
-
 def grabBrowserAbsolutePosition(browserName="mozilla"):
     C = ["xdotool", "search", "--name", browserName]
     ID = run(C, stdout=PIPE).stdout.decode("utf-8")
@@ -113,6 +111,7 @@ def showMountedBoard(MountedBoardArray):
     for i in range(8):
         for j in range(8):
             BOARD += MountedBoardArray[i*8+j]
+            BOARD += " "
         BOARD += "\n"
     BOARD += "\n"
 
