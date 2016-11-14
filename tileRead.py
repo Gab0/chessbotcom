@@ -5,11 +5,12 @@ import PIL.Image
 import PIL.ImageChops
 import time
 import imagehash
+import shutil
 
 startingTime = time.time()
 from keyConstants import *
 
-def grabBrowserAbsolutePosition(browserName="mozilla"):
+def grabBrowserAbsolutePosition(browserName="Mozilla"):
     C = ["xdotool", "search", "--name", browserName]
     ID = run(C, stdout=PIPE).stdout.decode("utf-8")
     C = ["xwininfo", "-id", ID]
@@ -32,16 +33,11 @@ def grabBrowserAbsolutePosition(browserName="mozilla"):
     Y = INFO['absoluteY'] - INFO['absoluteY']
         
     COORD = [X, Y]
-
+    print(COORD)
     return COORD
 
 
 def takeScreenshot():
-    '''callshutter = ['shutter', '--window=.*firefox.*',
-                   '-e', '-n', '--disable_systray',
-                   '-o', PathToPresentBoardScreenshot ]
-                   
-    run(callshutter, stdout=PIPE,stderr=PIPE)'''
 
     command = ['wmctrl', '-l']
     winList = run(command, stdout=PIPE, stderr=PIPE)
@@ -53,9 +49,22 @@ def takeScreenshot():
             winID = line.split(' ')[0]
     if winID:
         #print(winID)
-        command = [ 'import', '-border', '-frame', '-window',
-                   winID, PathToPresentBoardScreenshot ]
+        command = [ 'import', '-border', '-frame', '-window', winID,
+                    '-pause', '0.1', PathToPresentBoardScreenshot, PathToPresentBoardScreenshot ]
         run(command, stdout=PIPE, stderr=PIPE)
+
+        screenshot_name = PathToPresentBoardScreenshot.split('.')
+        A_name = screenshot_name[0] + '-0.' + screenshot_name[1]
+        B_name = screenshot_name[0] + '-1.' + screenshot_name[1]
+        # taking two separate screenshots guarates no piece is photographed while moving across the screen, which cause issues.
+        A = PIL.Image.open(A_name)
+        B = PIL.Image.open(B_name)
+        if imagehash.phash(A) == imagehash.phash(B):
+            shutil.copyfile(A_name, PathToPresentBoardScreenshot)
+        else:
+            print("Movement on screenshot detected. Ignoring.")
+        
+            
 
 def createBlackPointPieceMap(iBPPM):
     PieceValueMap = {
@@ -132,7 +141,7 @@ def CheckForNewGameImage(IMG):
         for j in range(IMG.height):
             if pixels[k,j] == (230, 145, 44):
                 NewGameCounter += 1
-                if NewGameCounter > 60:
+                if NewGameCounter > 210:
                     return True
     return False
 def GameStillRunning(IMG):
@@ -144,8 +153,12 @@ def ProcessImage(IMG):
     pixels = IMG.load()
     for i in range(IMG.size[0]):
         for j in range(IMG.size[1]):
-            if sum(pixels[i,j]) > BlackThreshold:
-                pixels[i,j] = WHITE 
+            try:
+                if sum(pixels[i,j]) > BlackThreshold:
+                    pixels[i,j] = WHITE
+            except TypeError:
+                print("Board Image processing failure. continuing...")
+                
     bg = PIL.Image.new(IMG.mode, IMG.size, WHITE)
     diff = PIL.ImageChops.difference(IMG,bg)
     bbox = diff.getbbox()

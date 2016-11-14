@@ -1,12 +1,15 @@
 #!/bin/python
 import sys
 #BoardDelimitationBox = [ 111, 186, 916 ,990 ]
-NewGameBox = [ 521 ,451 ,721 ,467 ]
+NewGameBox = [ 520 ,449 ,723 ,456 ]
 
 BlackThreshold = 10
 
 
-engineRunCommand = ["../e-vchess/engine/e-vchess", "-l", '-t', '-MD', '../e-vchess/machines']    
+engineRunCommand = ["../e-vchess/engine/e-vchess",
+                    "-l", '-MD', "../e-vchess/machines/top_machines",
+                    "--showinfo"]
+
 
 WindowNameKeyword = "Live Chess"
 

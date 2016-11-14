@@ -2,7 +2,8 @@
 from subprocess import Popen, PIPE, call
 
 from fcntl import fcntl, F_GETFL, F_SETFL
-from os import O_NONBLOCK, read, system
+from os import O_NONBLOCK, read, system, mkdir, path
+import random
 
 
 class Engine():
@@ -17,13 +18,37 @@ class Engine():
         flags = fcntl(self.engine.stdout, F_GETFL)
         fcntl(self.engine.stdout, F_SETFL, flags | O_NONBLOCK)
 
-        self.recordCommunication = open(recordCommunication, 'w')\
-                                   if recordCommunication else None
+        if recordCommunication:
+            if not path.isdir('engine_log'):
+                mkdir('engine_log')
+            
+        self.recordCommunication = recordCommunication
         self.MachineName = None
+        
     def send(self, data):
         self.engine.stdin.write(bytearray("%s\n" % data, "utf-8"))
         self.engine.stdin.flush()
 
+        self.appendToComm("input> %s\n" % data)
+
+    def newGame(self):
+        self.send("new")
+        if self.recordCommunication:
+            #self.recordCommunication.close()
+            filename = "engine_log/%s" % self.generateCommFileName()
+            self.recordCommunication = open(filename, 'w')
+            
+    def appendToComm(self, data):
+        try:
+            if not type(self.recordCommunication) == bool:
+                for c in data:
+                    self.recordCommunication.write(c)
+        except:
+            print("Failure to log. %s     message: %s" % (self.recordCommunication, data))
+        
+    def generateCommFileName(self):
+        return "game_%i.log" % random.randrange(66666)
+    
     def receive(self, method="lines"):
 
         if method == "lines":
@@ -33,15 +58,12 @@ class Engine():
             for line in data:
                 if 'MACname' in line:
                     self.MachineName = line[-1][:-1]
-            if self.recordCommunication:
-                for c in data:
-                    self.recordCommunication.write(c)
+                    print("%s is loaded." % self.MachineName)
         else:
             self.engine.stdout.flush()
             data = self.engine.stdout.read().decode('utf-8', 'ignore')
-            if self.recordCommunication:
-                self.recordCommunication.write(data)
 
+        self.appendToComm(data)
         return data
 
     def readMove(self, data=None, moveKeyword="move", Verbose=False):

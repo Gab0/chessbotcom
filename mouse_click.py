@@ -22,8 +22,8 @@ def generateSquareBox(boardcoord):
     
     for k in range(len(BOX)):
         BOX[k] = round(BOX[k])
-
-    # print(BOX)
+    
+    #print(BOX)
     return BOX
 
 def randomCoordInsideBox(BOX):
@@ -51,13 +51,16 @@ def makeMoveOnScreen(moveCoord, offset, promote=False):
         moveCoord[x][0] += offset[0]
         moveCoord[x][1] += offset[1]
     
-    DragTime = random()/2 + 0.5
+    DragTime = random()/4 + 0.2
     pyautogui.moveTo(moveCoord[0][0], moveCoord[0][1])
     pyautogui.dragTo(moveCoord[1][0], moveCoord[1][1], DragTime, button='left')
 
     if promote:
         sleep(0.5)
-        pyautogui.click()
+        pyautogui.click(x=moveCoord[1][0], y=moveCoord[1][1])
+    # to avoid resting the mouse where the button key to new game sits would appear,
+    # breaking new game detection.
+    pyautogui.moveTo( BoardDelimitationBox[2]+randrange(50),BoardDelimitationBox[3]-randrange(50) )
     
 def flickMouse(offset):
     NUM = randrange(3)
