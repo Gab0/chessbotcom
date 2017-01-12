@@ -56,7 +56,7 @@ def makeMoveOnScreen(moveCoord, offset, promote=False):
     pyautogui.dragTo(moveCoord[1][0], moveCoord[1][1], DragTime, button='left')
 
     if promote:
-        sleep(0.5)
+        sleep(1.0)
         pyautogui.click(x=moveCoord[1][0], y=moveCoord[1][1])
     # to avoid resting the mouse where the button key to new game sits would appear,
     # breaking new game detection.

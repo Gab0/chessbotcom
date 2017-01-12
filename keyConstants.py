@@ -6,8 +6,8 @@ NewGameBox = [ 520 ,449 ,723 ,456 ]
 BlackThreshold = 10
 
 
-engineRunCommand = ["../e-vchess/engine/e-vchess",
-                    "-l", '-MD', "../e-vchess/machines/top_machines",
+engineRunCommand = ["../lampreia-engine/engine/lampreia",
+                    "-l", '-MD', "../lampreia-engine/machines/top_machines",
                     "--showinfo"]
 
 

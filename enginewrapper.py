@@ -8,9 +8,9 @@ import random
 
 class Engine():
 
-    def __init__(self, Arguments, recordCommunication=None):
+    def __init__(self, EngineArguments, recordCommunication=None):
         try:
-            self.engine = Popen(Arguments, stdin=PIPE, stdout=PIPE)
+            self.engine = Popen(EngineArguments, stdin=PIPE, stdout=PIPE)
         except FileNotFoundError:
             print("Engine not Found.")
             return
@@ -36,7 +36,7 @@ class Engine():
         if self.recordCommunication:
             #self.recordCommunication.close()
             filename = "engine_log/%s" % self.generateCommFileName()
-            self.recordCommunication = open(filename, 'w')
+            self.recordCommunication = open(filename, 'w', 3)
             
     def appendToComm(self, data):
         try:

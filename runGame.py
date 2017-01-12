@@ -35,7 +35,9 @@ KeepSquareImages = True if '--watch' in sys.argv else False
 TestMode = True if '--test' in sys.argv else False
 AutoNewGameMode = True if '--autonew' in sys.argv else False
 NullMachine = True if '--null' in sys.argv else False
-
+if '--old' in sys.argv:
+    engineRunCommand[0] += "OLD"
+    print("running %s instead" % engineRunCommand[0])
 
 AllPieces = [ ['P','R','N','B','Q','K'],
               ['p','r','n','b','q','k'] ]
@@ -106,12 +108,15 @@ def Game():
         MOVES, pieceCount = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
 
             
-        if AutoNewGameMode and CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
-            mouseClick(NewGameBox, BrowserAbsolutePosition)
-            sleep(3)
-            print("\nScreen to new game detected!")
-            #if tryNewGame(Board, PieceValueMap, ComputerSide):
-            return
+        if CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
+            if AutoNewGameMode:
+                mouseClick(NewGameBox, BrowserAbsolutePosition)
+                sleep(3)
+                print("\nScreen to new game detected!")
+                #if tryNewGame(Board, PieceValueMap, ComputerSide):
+                return
+            else:
+                exit()
         
         V = validadeBoard()
         if not V:
@@ -145,18 +150,22 @@ def Game():
                             continue
                         
                     print("Move detected: %s" % showmove(M))
-                    lastPieceCount = pieceCount
+                    
                     if chess.Move.from_uci(M[3]) in list(Board.generate_legal_moves()):
                         Board.push(chess.Move.from_uci(M[3]))
                         RunningEngine.appendToComm(str(Board)+'\n')
                         RunningEngine.send(M[3])
                         WaitingEngineMove = True
                         print("\nWaiting engine movement...\n")
-
+                        lastPieceCount = pieceCount
                         EngineThinkingStartTime = Time()
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
                         print("Ignoring...")
+
+                else:
+                    print("Redoing movement %s." % M[3])
+                    makeMovementFromContrastingBoard(M[3], ComputerSide, True)
 
         else:
             print("|" * 12)
@@ -170,58 +179,70 @@ def Game():
                 EngineThinkingTime = Time() - EngineThinkingStartTime
                 print("\rEngine says %s !  :%is" % (enginemove, EngineThinkingTime)   )
                 Board.push(chess.Move.from_uci(enginemove))
+                RunningEngine.send("show")
+                
                 #RunningEngine.appendToComm(str(Board))
                 WaitingEngineMove = False
                 if not MovingModeEnabled:
                     break
-                From = enginemove[:2]
-                From = coordLabelToCoord(From)
-                
-                To = enginemove[2:]
-                To = coordLabelToCoord(To)
 
-                if ComputerSide:
-                    From = virtualAbsoluteCoordinateToXY(From)
-                    From = 63 - From
-                    From = virtualAbsoluteCoordinateToXY(From)
-                    To = virtualAbsoluteCoordinateToXY(To)
-                    To = 63 - To
-                    To = virtualAbsoluteCoordinateToXY(To)
-                
-
-                ScreenSquarePair = [From, To]
-                #print(ScreenSquarePair)
-                makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-                #print("Clicking %s" % ScreenSquarePair)
-                
-                
-                while True:
-                    if TestMode:
-                        break
-                    print("Checking if move was made...")
-                    TestingScreenMovelist, x = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-                    if not TestingScreenMovelist:
-                        break # no different pieces detected between expected board and web board; continuing
-                    MovingPiecePool = [ x[0] for x in TestingScreenMovelist ]
-                    ERROR = 0
-                    for p in MovingPiecePool:
-                        if p in AllPieces[ComputerSide]:
-                            ERROR = 1
-
-                    if ERROR:
-                        print("Repeating movement.")
-                        flickMouse(BrowserAbsolutePosition)
-                        makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-                        sleep(3)
-                    else:
-                        print("Move sucesfully done.")
-                        break
+                promotion = True if 'q' in enginemove else False
+                makeMovementFromContrastingBoard(enginemove, ComputerSide, promotion)
         try:
             sleep(0.2)
         except KeyboardInterrupt:
             print("Session Ends.")
             exit()
+            
+def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False):
+
+    if not Invert:
+        From = movement[:2]
+        To = movement[2:]
+    else:
+        To = movement[:2]
+        From = movement[2:]
         
+    From = coordLabelToCoord(From)
+    To = coordLabelToCoord(To)
+
+    if ComputerSide:
+        From = virtualAbsoluteCoordinateToXY(From)
+        From = 63 - From
+        From = virtualAbsoluteCoordinateToXY(From)
+        To = virtualAbsoluteCoordinateToXY(To)
+        To = 63 - To
+        To = virtualAbsoluteCoordinateToXY(To)
+
+
+    ScreenSquarePair = [From, To]
+    #print(ScreenSquarePair)
+    makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
+    #print("Clicking %s" % ScreenSquarePair)
+
+'''
+    while True:
+        if TestMode:
+            break
+        print("Checking if move was made...")
+        TestingScreenMovelist, x = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
+        if not TestingScreenMovelist:
+            break # no different pieces detected between expected board and web board; continuing
+        MovingPiecePool = [ x[0] for x in TestingScreenMovelist ]
+        ERROR = 0
+        for p in MovingPiecePool:
+            if p in AllPieces[ComputerSide]:
+                ERROR = 1
+
+        if ERROR:
+            print("Repeating movement.")
+            flickMouse(BrowserAbsolutePosition)
+            makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
+            sleep(3)
+        else:
+            print("Move sucesfully done.")
+            break
+'''        
 def virtualAbsoluteCoordinateToXY(coord):
     if type(coord) == list:
         C = coord[1] * 8
