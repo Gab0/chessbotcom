@@ -95,7 +95,7 @@ class Engine():
             pass
     def destroy(self):
         try:
-            call(['kill', '-9', str(self.engine.pid), '&'])
+            call(['kill', '-9', str(self.engine.pid)])
         except AttributeError:
             pass
 

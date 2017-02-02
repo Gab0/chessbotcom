@@ -3,6 +3,7 @@ import chess
 from time import sleep, time as Time
 import os
 import sys
+import signal
 
 if '--help' in sys.argv:
     print('''
@@ -20,11 +21,18 @@ chessbotcom v0.2;
 
 ''')
     exit()
+    
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 from tileRead import *
 from mouse_click import makeMoveOnScreen, flickMouse, mouseClick
 from enginewrapper import Engine
 from keyConstants import *
+
+def CleanExit(signal, frame):
+    print("\r  \n\n\tSession Over.\n\n")
+    RunningEngine.destroy()
+    exit(0)
+signal.signal(signal.SIGINT, CleanExit)
 
 
 if '--full' in sys.argv:
@@ -62,6 +70,8 @@ RunningEngine = Engine(engineRunCommand, True)
 
 print('\n--chessbotcom--\n')
 print("reference screenshot is: %s." % PathToReferenceScreenshot)
+# print(' '.join(engineRunCommand))
+
 def Game():
     PieceValueMap = setupTileReadingValues(BoardDelimitationBox)
     
@@ -96,6 +106,7 @@ def Game():
     RunningEngine.newGame()
     RunningEngine.send("load any")
     lastPieceCount = 32
+    RunningEngine.send('new')
     if not ComputerSide:
         RunningEngine.send('white')
         RunningEngine.send('go')
@@ -106,7 +117,6 @@ def Game():
     while game: 
         
         MOVES, pieceCount = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-
             
         if CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
             if AutoNewGameMode:
@@ -116,6 +126,7 @@ def Game():
                 #if tryNewGame(Board, PieceValueMap, ComputerSide):
                 return
             else:
+                RunningEngine.destroy()
                 exit()
         
         V = validadeBoard()
@@ -161,6 +172,7 @@ def Game():
                         EngineThinkingStartTime = Time()
                     else:
                         print("ILLEGAL MOVE! %s" % M[3])
+                        RunningEngine.send("dump")
                         print("Ignoring...")
 
                 else:
@@ -181,19 +193,16 @@ def Game():
                 Board.push(chess.Move.from_uci(enginemove))
                 RunningEngine.send("show")
                 
-                #RunningEngine.appendToComm(str(Board))
+                RunningEngine.appendToComm(str(Board))
                 WaitingEngineMove = False
                 if not MovingModeEnabled:
                     break
 
                 promotion = True if 'q' in enginemove else False
                 makeMovementFromContrastingBoard(enginemove, ComputerSide, promotion)
-        try:
-            sleep(0.2)
-        except KeyboardInterrupt:
-            print("Session Ends.")
-            exit()
-            
+
+        sleep(0.2)
+        
 def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False):
 
     if not Invert:
@@ -219,30 +228,8 @@ def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False):
     #print(ScreenSquarePair)
     makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
     #print("Clicking %s" % ScreenSquarePair)
-
-'''
-    while True:
-        if TestMode:
-            break
-        print("Checking if move was made...")
-        TestingScreenMovelist, x = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
-        if not TestingScreenMovelist:
-            break # no different pieces detected between expected board and web board; continuing
-        MovingPiecePool = [ x[0] for x in TestingScreenMovelist ]
-        ERROR = 0
-        for p in MovingPiecePool:
-            if p in AllPieces[ComputerSide]:
-                ERROR = 1
-
-        if ERROR:
-            print("Repeating movement.")
-            flickMouse(BrowserAbsolutePosition)
-            makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
-            sleep(3)
-        else:
-            print("Move sucesfully done.")
-            break
-'''        
+    
+# returns int 0~63 from list [ 0~7, 0~7 ] and vice & versa.
 def virtualAbsoluteCoordinateToXY(coord):
     if type(coord) == list:
         C = coord[1] * 8
@@ -381,6 +368,7 @@ def tryNewGame(Board, PieceValueMap, ComputerSide):
        if MOVES_AgainstSelfBoard not in [0,1]:    
            return True
     return False
+
 def validadeBoard():
     PreliminaryBoard = fullScreenToBoard(PathToPresentBoardScreenshot)
     PreliminaryBoardValue = EvaluateColoredBoard(PreliminaryBoard)
@@ -397,8 +385,8 @@ def showmove(movement):
     return '   '.join([str(x) for x in movement])
     
 if __name__ == '__main__':
-   
     PLAY = 10
     while PLAY:
         Game()
         PLAY -=1
+

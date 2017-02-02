@@ -2,12 +2,14 @@
 
 import pyautogui
 
+
 from keyConstants import *
 from tileRead import BoardDelimitationBox
 from random import randrange, random
 from time import sleep
 from copy import copy
 
+            
 def generateSquareBox(boardcoord):
     #print(boardcoord)
 
@@ -61,6 +63,8 @@ def makeMoveOnScreen(moveCoord, offset, promote=False):
     # to avoid resting the mouse where the button key to new game sits would appear,
     # breaking new game detection.
     pyautogui.moveTo( BoardDelimitationBox[2]+randrange(50),BoardDelimitationBox[3]-randrange(50) )
+
+
     
 def flickMouse(offset):
     NUM = randrange(3)
