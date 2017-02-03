@@ -1,13 +1,13 @@
 #!/bin/python
 import sys
 #BoardDelimitationBox = [ 111, 186, 916 ,990 ]
-NewGameBox = [ 520 , 364, 707, 407 ]
+NewGameBox = [ 520 , 386, 707, 429 ]
 
 BlackThreshold = 10
 
 
 engineRunCommand = ["../lampreia-engine/engine/lampreia",
-                    '-MD', "../lampreia-engine/machines/top_machines",
+                    '-MD', "../lampreia-engine/machines/halloffame",
                     "--showinfo"]
 
 

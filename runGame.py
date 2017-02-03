@@ -198,12 +198,12 @@ def Game():
                 if not MovingModeEnabled:
                     break
 
-                promotion = True if 'q' in enginemove else False
-                makeMovementFromContrastingBoard(enginemove, ComputerSide, promotion)
+                PromoteMove = True if 'q' in enginemove else False
+                makeMovementFromContrastingBoard(enginemove, ComputerSide, PromoteMove=PromoteMove)
 
         sleep(0.2)
         
-def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False):
+def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False, PromoteMove=False):
 
     if not Invert:
         From = movement[:2]
@@ -226,7 +226,7 @@ def makeMovementFromContrastingBoard(movement, ComputerSide, Invert=False):
 
     ScreenSquarePair = [From, To]
     #print(ScreenSquarePair)
-    makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition)
+    makeMoveOnScreen(ScreenSquarePair, BrowserAbsolutePosition, PromoteMove=PromoteMove)
     #print("Clicking %s" % ScreenSquarePair)
     
 # returns int 0~63 from list [ 0~7, 0~7 ] and vice & versa.
