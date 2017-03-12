@@ -37,8 +37,10 @@ def grabBrowserAbsolutePosition(browserName="Mozilla"):
     return COORD
 
 
-def takeScreenshot():
+def takeScreenshot(makeReference=False):
 
+    FilePath = PathToPresentBoardScreenshot if not makeReference else PathToReferenceScreenshot
+    
     command = ['wmctrl', '-l']
     winList = run(command, stdout=PIPE, stderr=PIPE)
     winList = winList.stdout.decode('utf-8').split('\n')
@@ -50,17 +52,17 @@ def takeScreenshot():
     if winID:
         #print(winID)
         command = [ 'import', '-border', '-frame', '-window', winID,
-                    '-pause', '0.1', PathToPresentBoardScreenshot, PathToPresentBoardScreenshot ]
+                    '-pause', '0.1', FilePath, FilePath ]
         run(command, stdout=PIPE, stderr=PIPE)
 
-        screenshot_name = PathToPresentBoardScreenshot.split('.')
+        screenshot_name = FilePath.split('.')
         A_name = screenshot_name[0] + '-0.' + screenshot_name[1]
         B_name = screenshot_name[0] + '-1.' + screenshot_name[1]
         # taking two separate screenshots guarates no piece is photographed while moving across the screen, which cause issues.
         A = PIL.Image.open(A_name)
         B = PIL.Image.open(B_name)
         if imagehash.phash(A) == imagehash.phash(B):
-            shutil.copyfile(A_name, PathToPresentBoardScreenshot)
+            shutil.copyfile(A_name, FilePath)
         else:
             print("Movement on screenshot detected. Ignoring.")
         
@@ -165,6 +167,7 @@ def ProcessImage(IMG):
     
     return IMG.crop(bbox)
 
+# redundant?
 def GenerateSquareImages(BoardImage):
     BoardSquares = SliceBoard(BoardImage)
     
@@ -206,7 +209,6 @@ def MakeReferenceMap(BoardSquares):
     return iBPPM
 
 def AnalyzeBoard(BoardImage, PieceValueMap, KeepSquareImages=False):
-    
     BoardSquares = SliceBoard(BoardImage)
 
     MountedBoard = [ 'x' for i in range(64) ]
@@ -249,8 +251,58 @@ def detectBoardBox():
                 last[1] = max(last[1], j)
 
 
-    return [ first[0], first[1], last[0], last[1] ] 
+    return [ first[0], first[1], last[0], last[1] ]
 
+def processImageToFragmentDetection(Fragment, bounds):
+    if len(bounds) < 4:
+        bounds = [0, 0] + list(bounds)
+
+    DATA = []
+    for x in range(bounds[0], bounds[2]):
+        DATA.append([])
+        for y in range(bounds[1], bounds[3]):
+            W = sum(Fragment[x, y])
+            if W > 300:
+                DATA[-1].append(0)
+            else:
+                DATA[-1].append(1)
+
+    return DATA
+
+def detectSubImage(_FRAG, _IMAGE):
+    print("Processing %s" % _FRAG)
+    FRAG = PIL.Image.open(_FRAG)
+    FRAGpx = FRAG.load()
+    FRAGpx = processImageToFragmentDetection(FRAGpx, FRAG.size)
+    
+    IMG = PIL.Image.open(_IMAGE)
+    IMGpx = IMG.load()
+    IMGpx = processImageToFragmentDetection(IMGpx, WinnerSearchSpaceBox)
+
+    for i in range(len(IMGpx) - len(FRAGpx)):
+        for j in range(len(IMGpx[0]) - len(FRAGpx[0])):
+            I=0
+            J=0
+            LineScore=0
+            while True:
+                A = IMGpx[i+I][j+J]
+                B = FRAGpx[I][J]
+                
+                if A == B:
+                    LineScore +=1
+                J+=1
+                if J >= FRAG.size[1]:
+                    #print("%i %i" % ( I,J ) )
+                    if LineScore/(J+1) > 0.7:
+                        LineScore=0
+                        J=0
+                        I+=1
+                        if I >= FRAG.size[0]:
+                            return True
+                    else:
+                        break
+    return False
+    
 BoardDelimitationBox = detectBoardBox()
 
 #print('done. %i ' % (time.time() - startingTime))

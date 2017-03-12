@@ -44,29 +44,30 @@ class Engine():
                 for c in data:
                     self.recordCommunication.write(c)
         except:
-            print("Failure to log. %s     message: %s" % (self.recordCommunication, data))
+            print("Failure to log @ %s     message: %s" % (self.recordCommunication, data))
         
     def generateCommFileName(self):
         return "game_%i.log" % random.randrange(66666)
     
     def receive(self, method="lines"):
-
         if method == "lines":
             self.engine.stdout.flush()
             data = self.engine.stdout.readlines()
             data = [x.decode('utf-8', 'ignore') for x in data]
-            for line in data:
-                if 'MACname' in line:
-                    self.MachineName = line[-1][:-1]
-                    print("%s is loaded." % self.MachineName)
+            
         else:
             self.engine.stdout.flush()
             data = self.engine.stdout.read().decode('utf-8', 'ignore')
-
+            
+        for line in data:
+            if 'machinepath>>' in line:
+                self.MachineName = line.split('/')[-1][:-1]
+                #print("%s is loaded." % self.MachineName)
         self.appendToComm(data)
         return data
 
     def readMove(self, data=None, moveKeyword="move", Verbose=False):
+        Score = ""
         if not data:
             data = self.receive()
 
@@ -74,10 +75,16 @@ class Engine():
             if Verbose:
                 print(">%s" % line)
             if moveKeyword in line and not line.startswith("param"):
-                line = line.replace('\n', '').strip().split(" ")
-                return line[-1]
+                movement = line.replace('\n', '').strip().split(" ")[-1]
+                for line in data:
+                    line = line.split(" ")
+                    if len(line) > 4 and movement in line[4]:
+                        Score = line[1]
+                return movement, Score
+            if 'Checkmate' in line:
+                return 'Checkmate', None
     
-        return None
+        return None, None
 
     def pid(self):
         return self.engine.pid

@@ -62,8 +62,12 @@ BrowserAbsolutePosition = grabBrowserAbsolutePosition()
 #print("B.A.P. %s" %BrowserAbsolutePosition)
 #print("path %s" % os.path.realpath(__file__))
 print("Board Position on Screen: %s" % BoardDelimitationBox)
-      
+
+if '--reference' in sys.argv:
+    takeScreenshot(True)
+
 G = fullScreenToBoard(PathToReferenceScreenshot)
+
 GeneralBoardValue = EvaluateColoredBoard(G)
 
 RunningEngine = Engine(engineRunCommand, True)
@@ -100,8 +104,6 @@ def Game():
     EngineThinkingStartTime = Time()
     
     print("board reader online.")
-    
-
   
     RunningEngine.newGame()
     RunningEngine.send("load any")
@@ -114,11 +116,24 @@ def Game():
     else:
         RunningEngine.send('black')
     game = True
+
+    #print(">%s" % RunningEngine.MachineName)
     while game: 
         
         MOVES, pieceCount = detectScreenBoardMovement(Board, PieceValueMap, ComputerSide)
             
         if CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
+            # Check winner;
+            MachineWins = detectSubImage(PathToNameTag, PathToPresentBoardScreenshot)
+            if MachineWins:
+                print("MACHINE WINS %s" % RunningEngine.MachineName)
+            else:
+                print("MACHINE LOSES")
+                MacFile = "../lampreia-engine/machines/halloffame/%s" % RunningEngine.MachineName
+                print("Removing > %s <" % MacFile)                
+                os.remove(MacFile)
+                
+                
             if AutoNewGameMode:
                 mouseClick(NewGameBox, BrowserAbsolutePosition)
                 sleep(3)
@@ -186,10 +201,12 @@ def Game():
             sleep(0.3)
 
             print("\r... %.1fs" % (Time() - EngineThinkingStartTime), end=" ")
-            enginemove = RunningEngine.readMove(Verbose=False)
+            enginemove, score = RunningEngine.readMove(Verbose=False)
             if enginemove:
+                if enginemove == 'Checkmate':
+                    break
                 EngineThinkingTime = Time() - EngineThinkingStartTime
-                print("\rEngine says %s !  :%is" % (enginemove, EngineThinkingTime)   )
+                print("\rEngine says %s !  :%is     %s" % (enginemove, EngineThinkingTime, score)   )
                 Board.push(chess.Move.from_uci(enginemove))
                 RunningEngine.send("show")
                 
@@ -250,13 +267,13 @@ def screenCoordinateToVirtualBoard(I):
 
     return i * 8 + j
 
-def ReadScreen(PieceValueMap):
+def ReadScreen(PieceValueMap, CreateTileset=False):
     if TestMode:
         B = fullScreenToBoard('screenshots/referencebe2e4.png')
     else:
         B = fullScreenToBoard(PathToPresentBoardScreenshot)
 
-    MountedBoard = AnalyzeBoard(B, PieceValueMap, KeepSquareImages)
+    MountedBoard = AnalyzeBoard(B, PieceValueMap, CreateTileset)
 
     print(showMountedBoard(MountedBoard))
     return MountedBoard
@@ -383,10 +400,12 @@ def validadeBoard():
 
 def showmove(movement):
     return '   '.join([str(x) for x in movement])
+
+
     
 if __name__ == '__main__':
-    PLAY = 10
-    while PLAY:
+    GAMES_TO_PLAY = 10
+    while GAMES_TO_PLAY:
         Game()
-        PLAY -=1
+        GAMES_TO_PLAY -=1
 
