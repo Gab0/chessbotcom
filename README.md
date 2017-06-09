@@ -10,7 +10,8 @@ Don't just load stockfish on it, this is dumb. It's meant to test experimental c
 Requires: [python modules] imagehash, python-chess, pyautogui<br>
 	  [executables] imagemagick, xdotool
 
-Usage:`
+Usage:<br>
+`
 	* Open the online chess website, showing the board on the starting position (white bottom).
 	* Set 'WhiteSquareColor' variable @./keyConstants.py. This is the color of the white chess squares on the screenboard, on RGB tuple values like this:
         'WhiteSquareColor = (240,217,181)'
