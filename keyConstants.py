@@ -21,4 +21,5 @@ PathToPresentBoardScreenshot = 'screenshots/current_board.png'
 PathToReferenceScreenshot = 'screenshots/reference_guest.png'\
                             if '--secondary' in sys.argv else\
                             'screenshots/reference.png'
-PathToNameTag = 'screenshots/playername.jpg'
+PathToNameTag = ['screenshots/playername.jpg',
+                 'screenshots/playername2.jpg' ]

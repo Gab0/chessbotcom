@@ -124,8 +124,10 @@ def Game():
             
         if CheckForNewGameImage(PIL.Image.open(PathToPresentBoardScreenshot)):
             # Check winner;
-            MachineWins = detectSubImage(PathToNameTag, PathToPresentBoardScreenshot)
-            if MachineWins:
+            
+            MachineWins = [ detectSubImage(NameTag, PathToPresentBoardScreenshot)\
+                           for NameTag in PathToNameTag ]
+            if True in MachineWins:
                 print("MACHINE WINS %s" % RunningEngine.MachineName)
             else:
                 print("MACHINE LOSES")
@@ -192,7 +194,11 @@ def Game():
 
                 else:
                     print("Redoing movement %s." % M[3])
-                    makeMovementFromContrastingBoard(M[3], ComputerSide, True)
+                    takeScreenshot()
+                    if validadeBoard():
+                        makeMovementFromContrastingBoard(M[3], ComputerSide, True)
+                    else:
+                        continue
 
         else:
             print("|" * 12)
@@ -216,7 +222,9 @@ def Game():
                     break
 
                 PromoteMove = True if 'q' in enginemove else False
-                makeMovementFromContrastingBoard(enginemove, ComputerSide, PromoteMove=PromoteMove)
+                takeScreenshot()
+                if validadeBoard():
+                    makeMovementFromContrastingBoard(enginemove, ComputerSide, PromoteMove=PromoteMove)
 
         sleep(0.2)
         
@@ -405,7 +413,7 @@ def showmove(movement):
     
 if __name__ == '__main__':
     GAMES_TO_PLAY = 10
-    while GAMES_TO_PLAY:
+    for G in range(GAMES_TO_PLAY):
         Game()
-        GAMES_TO_PLAY -=1
+
 

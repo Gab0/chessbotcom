@@ -10,7 +10,7 @@ import shutil
 startingTime = time.time()
 from keyConstants import *
 
-def grabBrowserAbsolutePosition(browserName="Mozilla"):
+def grabBrowserAbsolutePosition(browserName=WindowNameKeyword):
     C = ["xdotool", "search", "--name", browserName]
     ID = run(C, stdout=PIPE).stdout.decode("utf-8")
     C = ["xwininfo", "-id", ID]
@@ -148,8 +148,7 @@ def CheckForNewGameImage(IMG):
     return False
 def GameStillRunning(IMG):
     pass
-    
-
+ 
 def ProcessImage(IMG):
     WHITE = (255,255,255,255)
     pixels = IMG.load()
@@ -178,7 +177,6 @@ def GenerateSquareImages(BoardImage):
         BoardSquares[IDX].save("ReferenceSquareImages/%i.png" % IDX)
         IDX+=1
     return BoardSquares
-
 
 def SliceBoard(BOARD):
     bWidth, bHeight = BOARD.size
