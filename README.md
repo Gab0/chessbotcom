@@ -11,11 +11,11 @@ Requires: [python modules] imagehash, python-chess, pyautogui<br>
 	  [executables] imagemagick, xdotool
 
 Usage:
-       * Open the online chess website, showing the board on the starting position (white bottom).
-       * Set 'WhiteSquareColor' variable @./keyConstants.py. This is the color of the white chess squares on the screenboard, on RGB tuple values like this:
-       `WhiteSquareColor = (240,217,181)`
-       * Setup the screen and run '$./runGame.py --reference' (@ first run, redo whenever you change screen positioning/configs for whatever reason.)
-       * Start the game, quickly run '$./runGame.py'
-       * Don't move the screen away from the referenced position, don't zoom.
-       * Game window needs to be on foreground. Clicking has to be done.
-       * Avoid alt-tabbing from the browser window. This will screw your mouse operations while it runs, so just watch. 
+	* Open the online chess website, showing the board on the starting position (white bottom).
+	* Set 'WhiteSquareColor' variable @./keyConstants.py. This is the color of the white chess squares on the screenboard, on RGB tuple values like this:
+        `WhiteSquareColor = (240,217,181)`
+        * Setup the screen and run '$./runGame.py --reference' (@ first run, redo whenever you change screen positioning/configs for whatever reason.)
+        * Start the game, quickly run '$./runGame.py'
+        * Don't move the screen away from the referenced position, don't zoom.
+        * Game window needs to be on foreground. Clicking has to be done.
+        * Avoid alt-tabbing from the browser window. This will screw your mouse operations while it runs, so just watch. 
