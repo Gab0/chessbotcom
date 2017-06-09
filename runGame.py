@@ -65,7 +65,8 @@ print("Board Position on Screen: %s" % BoardDelimitationBox)
 
 if '--reference' in sys.argv:
     takeScreenshot(True)
-
+    print("Screen reference taken... terminating run")
+    exit()
 G = fullScreenToBoard(PathToReferenceScreenshot)
 
 GeneralBoardValue = EvaluateColoredBoard(G)
