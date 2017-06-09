@@ -13,7 +13,7 @@ Requires: [python modules] imagehash, python-chess, pyautogui<br>
 Usage:
 	* Open the online chess website, showing the board on the starting position (white bottom).
 	* Set 'WhiteSquareColor' variable @./keyConstants.py. This is the color of the white chess squares on the screenboard, on RGB tuple values like this:
-        `WhiteSquareColor = (240,217,181)`
+        'WhiteSquareColor = (240,217,181)'
         * Setup the screen and run '$./runGame.py --reference' (@ first run, redo whenever you change screen positioning/configs for whatever reason.)
         * Start the game, quickly run '$./runGame.py'
         * Don't move the screen away from the referenced position, don't zoom.
