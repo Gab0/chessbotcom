@@ -10,8 +10,8 @@ Requires: [python modules] imagehash, python-chess, pyautogui<br>
 
 Usage:<br>
     -> Open the online chess website, showing the board on the starting position (white bottom).<br/>
-    -> Set 'WhiteSquareColor' variable @./keyConstants.py. Corresponds to the color of white chess squares on the screenboard. RGB tuple values:<br/>
-        'WhiteSquareColor = (240,217,181)'<br/>
+    -> Set 'WhiteSquareColor' variable @./keyConstants.py. Corresponds to the color of white chess squares on the screenboard. <br/>
+    RGB tuple values:        'WhiteSquareColor = (240,217,181)'<br/>
     -> Setup the screen and run '$./runGame.py --reference' (@ first run, redo whenever you change screen positioning/configs for whatever reason.)<br/>
     -> Start the game, quickly run '$./runGame.py'<br/>
     -> Don't move the screen away from the referenced position, don't zoom.<br/>
